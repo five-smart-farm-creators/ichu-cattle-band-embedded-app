@@ -13,3 +13,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Buffer of 60 pending readings that are retried when a route is unavailable.
 - Telemetry delivery over HTTP to the Edge API on Wi-Fi, and over BLE to the Portable Edge Gateway when a gateway is subscribed.
 - Wokwi simulation with a NEO-6M chip whose sliders move the simulated collar.
+- Persistent queue in NVS: pending readings survive reboots and power loss.
+- `invalid_reasons` in the telemetry body for a body temperature, activity index or position that its sensor cannot provide.
+- `build` job in the Git Flow checks workflow, which compiles the firmware on every pull request.
+
+### Changed
+
+- Wi-Fi credentials, the Edge API address and the device API key move from `CollarConfig.h` to `CollarSecrets.h`, which is git-ignored; a fresh clone builds with the values of `CollarSecrets.example.h`.
+- BLE is disabled by default (`kBleEnabled = false`); the demo and Wokwi use Wi-Fi.

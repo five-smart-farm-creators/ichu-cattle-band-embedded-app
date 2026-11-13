@@ -8,10 +8,10 @@ Firmware of the ICHU cattle band, the collar that monitors each animal. It runs 
 
 The band is the device edge of the ICHU solution (report, section 5.6). For each reading it chooses one of two routes:
 
-- **BLE** to the Portable Edge Gateway, when a gateway is connected and has subscribed to notifications.
+- **BLE** to the Portable Edge Gateway, when a gateway is connected and has subscribed to notifications. It is off by default (see [BLE Contract](#ble-contract)).
 - **HTTP over Wi-Fi** to the Edge API, otherwise.
 
-The HTTP body is the contract of `POST /api/v1/monitoring/telemetry-readings` in `ichu-edge-service`; the BLE route carries the same JSON. A missing sensor is logged once, and its reading goes out without that measurement. Readings that cannot be sent wait in a RAM buffer of 60 readings and are retried.
+The HTTP body is the contract of `POST /api/v1/monitoring/telemetry-readings` in `ichu-edge-service`; the BLE route carries the same JSON. A sensor that does not answer is reported in `invalid_reasons` (see [Invalid Readings](#invalid-readings)). Readings that cannot be sent wait in a queue of 60 readings kept in NVS and are retried.
 
 Wokwi cannot simulate BLE between two devices, so the simulation demonstrates the Wi-Fi route. The gateway side of BLE is a later phase of `ichu-edge-service`.
 
@@ -35,11 +35,12 @@ All modules share the 3V3 and GND rails of the board.
 ```text
 ichu-cattle-band-embedded-app/
 ├── sketch.ino                       composition root: setup() and loop()
-├── CollarConfig.h                   identity, network, pins, intervals and thresholds
+├── CollarConfig.h                   identity, pins, intervals and thresholds
+├── CollarSecrets.example.h          template for the git-ignored CollarSecrets.h
 ├── TelemetryReading.h               reading value type with optional measurements
 ├── SendOutcome.h                    result of one send attempt
 ├── ActivityIndexCalculator.h/.cpp   activity index from accelerometer samples
-├── ReadingBuffer.h/.cpp             fixed-capacity FIFO of pending readings
+├── ReadingBuffer.h/.cpp             FIFO of pending readings, kept in NVS
 ├── TemperatureSensor.h/.cpp         DS18B20 over 1-Wire
 ├── MotionSensor.h/.cpp              MPU-6050 accelerometer
 ├── GpsReceiver.h/.cpp               NEO-6M over UART with TinyGPS++
@@ -67,11 +68,16 @@ The sources stay at the root so that the project also opens in the Wokwi web edi
 
 ## Configuration
 
-Edit `CollarConfig.h`:
+Copy `CollarSecrets.example.h` to `CollarSecrets.h` and set the values there. The copy is git-ignored, and a fresh clone builds with the example values, which target Wokwi.
 
-- `kDeviceId`, `kDeviceSerial` and `kDeviceApiKey` identify the development collar. The API key must equal `DEVELOPMENT_DEVICE_API_KEY` of the Edge API.
-- `kWifiSsid`, `kWifiPassword` and `kEdgeBaseUrl` select the network. The Wokwi values reach the host through `host.wokwi.internal`. On hardware, set `kEdgeBaseUrl` to `http://<PC LAN address>:5000`.
-- `kBleEnabled` turns the BLE route on or off.
+- `kDeviceApiKey` must equal the `DEVICE_API_KEY` or `DEVELOPMENT_DEVICE_API_KEY` registered in the Edge API.
+- `kWifiSsid` and `kWifiPassword` select the network. The ESP32-S3 joins only 2.4 GHz networks.
+- `kEdgeBaseUrl` points to the Edge API. The Wokwi value reaches the host through `host.wokwi.internal`. On hardware, set it to the PC LAN address, for example `http://192.168.1.20:5000`, and start the Edge API with `HOST=0.0.0.0` so that it listens on the LAN.
+
+Edit `CollarConfig.h` for the rest:
+
+- `kDeviceId` and `kDeviceSerial` identify the development collar.
+- `kBleEnabled` turns the BLE route on or off. It is off by default.
 - Pins, intervals, the activity full scale and the battery thresholds are in the same file.
 
 ---
@@ -116,7 +122,23 @@ The default partition scheme gives the application 1310720 bytes; the current fi
 
 The band keeps one reading in flight. It notifies the telemetry characteristic and waits up to 5 s for the gateway to write the reading's `event_id` to the acknowledgement characteristic. The gateway writes it once the edge has stored the reading or rejected it permanently; both cases remove the reading from the band buffer. Without an acknowledgement in time, the band sends the same reading again with the same `event_id`, so the edge answers `200 OK` for an identical retry instead of storing a duplicate.
 
-The BLE route is used only while a gateway is connected and has subscribed to notifications, and only for a body that fits the negotiated MTU minus the 3-byte ATT header (typical bodies are about 300 bytes). A reading that does not fit goes over HTTP.
+BLE is off by default (`kBleEnabled = false`): it is the planned route to a portable gateway, and the demo and Wokwi use Wi-Fi. When it is on, the BLE route is used only while a gateway is connected and has subscribed to notifications, and only for a body that fits the negotiated MTU minus the 3-byte ATT header (typical bodies are about 300 bytes). A reading that does not fit goes over HTTP.
+
+---
+
+## Invalid Readings
+
+A sensor that does not answer does not block its reading: the reading is still sent, with the failure listed in `invalid_reasons` instead of a value. A field with a reason carries no value.
+
+| Field | Reason sent to the Edge API |
+| --- | --- |
+| `body_temperature` | Temperature sensor not responding |
+| `activity_index` | Motion sensor not responding |
+| `position` | GPS receiver not responding |
+
+- The temperature sensor fails when the DS18B20 read fails.
+- The motion sensor fails when the MPU-6050 gives no sample during the whole reporting interval.
+- The GPS fails only when the NEO-6M sends no NMEA data at all. A GPS that answers without a fix leaves `position` absent, which is not an invalid reason.
 
 ---
 
@@ -132,7 +154,7 @@ The firmware prints one summary line per reading. Angle brackets mark values tha
 [edge] delivered <event id> (201)
 ```
 
-Other lines use the prefixes `[ble]`, `[buffer]`, `[gps]`, `[sensors]` and `[edge]`.
+A failed sensor prints `temp=failed`, `activity=failed` or `position=failed` in place of its value. A restart with queued readings prints `[buffer] restored <count> readings`. Other lines use the prefixes `[ble]`, `[buffer]`, `[gps]`, `[sensors]` and `[edge]`.
 
 ---
 
@@ -150,9 +172,9 @@ where `a = (ax, ay, az)` is the acceleration in m/s². Movement appears as devia
 
 ## Known Limitations
 
-- The RAM buffer of 60 readings is lost on power loss. The boot counter in flash keeps event ids unique across reboots.
+- The queue of 60 readings in NVS survives reboots and power loss. A cut during a write can lose the reading being queued, and can resend a reading that was already delivered; the edge drops the resend by `event_id`. The boot counter in flash keeps event ids unique across reboots.
 - The BLE link is neither authenticated nor encrypted yet.
-- Wokwi has no BLE between devices, so the simulation exercises only the Wi-Fi route. If the simulator does not start the BLE controller, set `kBleEnabled` to `false`.
+- Wokwi has no BLE between devices, so the simulation exercises only the Wi-Fi route. `kBleEnabled` is `false` by default.
 - The DS18B20 measures surface temperature, not core body temperature.
 - An HTTP request blocks the loop for at most `kHttpTimeoutMs`, and each DS18B20 conversion blocks for about 190 ms.
 - The battery percentage is a linear approximation of the Li-ion discharge curve.
