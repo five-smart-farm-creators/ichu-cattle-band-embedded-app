@@ -1,0 +1,9 @@
+{
+  "name": "gps-neo6m",
+  "author": "SmartFarm",
+  "pins": ["VCC", "GND", "RX", "TX"],
+  "controls": [
+    { "id": "northMeters", "label": "North offset (m)", "type": "range", "min": -2000, "max": 2000, "step": 10 },
+    { "id": "eastMeters", "label": "East offset (m)", "type": "range", "min": -2000, "max": 2000, "step": 10 }
+  ]
+}
