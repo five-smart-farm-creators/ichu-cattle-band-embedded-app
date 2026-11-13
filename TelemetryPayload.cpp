@@ -36,6 +36,18 @@ size_t TelemetryPayload::serialize(const TelemetryReading& reading, char* out, s
         position["longitude"] = roundTo(reading.longitude, 1e6);
         position["accuracy_meters"] = roundTo(reading.accuracyMeters, 100.0);
     }
+    if (reading.bodyTemperatureFailed || reading.activityIndexFailed || reading.positionFailed) {
+        JsonObject invalidReasons = document["invalid_reasons"].to<JsonObject>();
+        if (reading.bodyTemperatureFailed) {
+            invalidReasons["body_temperature"] = "Temperature sensor not responding";
+        }
+        if (reading.activityIndexFailed) {
+            invalidReasons["activity_index"] = "Motion sensor not responding";
+        }
+        if (reading.positionFailed) {
+            invalidReasons["position"] = "GPS receiver not responding";
+        }
+    }
     const size_t length = measureJson(document);
     if (length >= capacity) {
         return 0;

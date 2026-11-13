@@ -18,6 +18,10 @@ void GpsReceiver::poll() {
     }
 }
 
+bool GpsReceiver::isResponding() const {
+    return gps_.charsProcessed() > 0;
+}
+
 bool GpsReceiver::position(double& latitude, double& longitude, float& accuracyMeters) {
     if (!gps_.location.isValid() || gps_.location.age() > CollarConfig::kGpsMaxAgeMs || !gps_.hdop.isValid()) {
         return false;

@@ -10,6 +10,8 @@ class GpsReceiver {
 public:
     void begin();
     void poll();
+    // NMEA data counts even before a fix, so only a silent module is reported as failed.
+    bool isResponding() const;
     // TinyGPS++ accessors are not const, so these cannot be.
     bool position(double& latitude, double& longitude, float& accuracyMeters);
     bool utcDateTime(tm& utc);
