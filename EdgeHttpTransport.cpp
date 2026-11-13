@@ -10,8 +10,8 @@
 void EdgeHttpTransport::begin() {
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
-    WiFi.begin(CollarConfig::kWifiSsid, CollarConfig::kWifiPassword);
-    Serial.printf("[wifi] connecting to %s\n", CollarConfig::kWifiSsid);
+    WiFi.begin(CollarSecrets::kWifiSsid, CollarSecrets::kWifiPassword);
+    Serial.printf("[wifi] connecting to %s\n", CollarSecrets::kWifiSsid);
 }
 
 void EdgeHttpTransport::poll() {
@@ -39,13 +39,13 @@ SendOutcome EdgeHttpTransport::send(const TelemetryReading& reading) {
         return SendOutcome::Rejected;
     }
 
-    const String url = String(CollarConfig::kEdgeBaseUrl) + CollarConfig::kTelemetryReadingsPath;
+    const String url = String(CollarSecrets::kEdgeBaseUrl) + CollarConfig::kTelemetryReadingsPath;
     HTTPClient http;
     http.begin(url);
     http.setConnectTimeout(static_cast<int32_t>(CollarConfig::kHttpTimeoutMs));
     http.setTimeout(static_cast<uint16_t>(CollarConfig::kHttpTimeoutMs));
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("X-API-Key", CollarConfig::kDeviceApiKey);
+    http.addHeader("X-API-Key", CollarSecrets::kDeviceApiKey);
     const int status = http.POST(String(body));
     http.end();
 
