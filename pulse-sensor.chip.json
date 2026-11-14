@@ -1,0 +1,8 @@
+{
+  "name": "pulse-sensor",
+  "author": "SmartFarm",
+  "pins": ["VCC", "GND", "OUT"],
+  "controls": [
+    { "id": "bpm", "label": "Heart rate (bpm, 0 = no contact)", "type": "range", "min": 0, "max": 240, "step": 1 }
+  ]
+}

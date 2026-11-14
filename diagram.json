@@ -8,7 +8,9 @@
     { "type": "wokwi-resistor", "id": "pullup", "top": -60, "left": 170, "rotate": 90, "attrs": { "value": "4700" } },
     { "type": "wokwi-mpu6050", "id": "imu", "top": 150, "left": 200, "attrs": {} },
     { "type": "wokwi-potentiometer", "id": "battery", "top": 260, "left": -120, "attrs": {} },
-    { "type": "chip-gps-neo6m", "id": "gps", "top": 200, "left": 400, "attrs": {} }
+    { "type": "chip-gps-neo6m", "id": "gps", "top": 200, "left": 400, "attrs": {} },
+    { "type": "chip-pulse-sensor", "id": "pulse", "top": -120, "left": -260, "attrs": { "bpm": "70" } },
+    { "type": "wokwi-gas-sensor", "id": "gas", "top": 60, "left": -320, "attrs": {} }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
@@ -28,7 +30,13 @@
     [ "gps:VCC", "esp:3V3.1", "red", [] ],
     [ "gps:GND", "esp:GND.1", "black", [] ],
     [ "gps:TX", "esp:18", "green", [] ],
-    [ "gps:RX", "esp:17", "blue", [] ]
+    [ "gps:RX", "esp:17", "blue", [] ],
+    [ "pulse:VCC", "esp:3V3.1", "red", [] ],
+    [ "pulse:GND", "esp:GND.1", "black", [] ],
+    [ "pulse:OUT", "esp:5", "purple", [] ],
+    [ "gas:VCC", "esp:3V3.1", "red", [] ],
+    [ "gas:GND", "esp:GND.1", "black", [] ],
+    [ "gas:AOUT", "esp:6", "gray", [] ]
   ],
   "dependencies": {}
 }
