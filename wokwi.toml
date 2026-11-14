@@ -6,3 +6,7 @@ elf = 'build/sketch.ino.elf'
 [[chip]]
 name = 'gps-neo6m'
 binary = 'gps-neo6m.chip.wasm'
+
+[[chip]]
+name = 'pulse-sensor'
+binary = 'pulse-sensor.chip.wasm'

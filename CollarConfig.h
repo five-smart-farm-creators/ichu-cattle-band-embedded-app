@@ -34,14 +34,34 @@ constexpr uint8_t kGpsRxPin = 18;
 constexpr uint8_t kGpsTxPin = 17;
 constexpr uint32_t kGpsBaud = 9600;
 constexpr uint8_t kBatteryPin = 1;
+// ADC1 pins, so the readings keep working while Wi-Fi is on.
+constexpr uint8_t kPulsePin = 5;
+constexpr uint8_t kGasPin = 6;
 
 // Mirror the edge and backend BodyTemperature range, so a collar off the animal
 // reports an invalid temperature instead of losing the whole reading.
 constexpr float kMinBodyTemperatureC = 30.0f;
 constexpr float kMaxBodyTemperatureC = 45.0f;
 
+// Mirror the edge and backend HeartRate range.
+constexpr float kMinHeartRateBpm = 30.0f;
+constexpr float kMaxHeartRateBpm = 200.0f;
+
 constexpr uint32_t kReadingIntervalMs = 10000;
 constexpr uint32_t kMotionSampleIntervalMs = 50;
+// 100 Hz keeps the beat timing error near 1% at a resting cattle heart rate.
+constexpr uint32_t kPulseSampleIntervalMs = 10;
+// Beats closer than this are noise or the dicrotic wave; gaps longer than this are a lost signal.
+constexpr uint32_t kPulseRefractoryMs = 200;
+constexpr uint32_t kPulseMaxIntervalMs = 3000;
+constexpr size_t kPulseMinIntervals = 2;
+constexpr float kPulseMinAmplitudeMv = 300.0f;
+constexpr float kPulseEnvelopeDecayMv = 0.5f;
+constexpr float kPulseHysteresisMv = 50.0f;
+// The MQ-2 heater output drifts for about a minute after power-up.
+constexpr uint32_t kGasWarmupMs = 60000;
+// AO reaches the ADC through a divider that maps the 5 V module output to 3.3 V.
+constexpr float kGasFullScaleMv = 3300.0f;
 constexpr uint32_t kGpsMaxAgeMs = 5000;
 // Silence longer than this usually means the GPS module is not wired.
 constexpr uint32_t kGpsSilenceTimeoutMs = 5000;
