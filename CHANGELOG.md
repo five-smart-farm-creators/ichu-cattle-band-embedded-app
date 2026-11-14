@@ -19,6 +19,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ### Fixed
 
+- The compiled Wokwi GPS chip `gps-neo6m.chip.wasm` is committed, so a fresh clone simulates the GPS.
 - A body temperature outside 30–45 °C is sent in `invalid_reasons` as `Temperature out of physiological range` instead of making the edge reject the whole reading with 400.
 
 ### Changed
