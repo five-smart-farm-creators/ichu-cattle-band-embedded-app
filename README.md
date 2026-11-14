@@ -25,8 +25,10 @@ Wokwi cannot simulate BLE between two devices, so the simulation demonstrates th
 | MPU-6050 accelerometer | I2C (SDA, SCL) | GPIO8, GPIO9 | Address 0x68, range ±4 g |
 | NEO-6M GPS module | UART1, 9600 baud | GPIO18 receives the module TX, GPIO17 drives the module RX | NMEA 0183 sentences |
 | Li-ion battery | ADC through a 1:2 divider | GPIO1 | Two equal resistors halve the cell voltage |
+| SP-203 pulse sensor | Analog (ADC1) | GPIO5 | Photoelectric PPG output around mid-rail |
+| MQ-2 gas sensor | Analog AO (ADC1) | GPIO6 | 5 V module; AO needs a divider to 3.3 V; DO unused |
 
-All modules share the 3V3 and GND rails of the board.
+All modules except the MQ-2 share the 3V3 and GND rails of the board. The MQ-2 heater runs on 5 V and draws about 150 mA, which shortens the battery life of a collar considerably; it is a prototype choice, and the Wokwi part runs on 3V3 without the divider.
 
 ---
 
@@ -45,6 +47,8 @@ ichu-cattle-band-embedded-app/
 ├── MotionSensor.h/.cpp              MPU-6050 accelerometer
 ├── GpsReceiver.h/.cpp               NEO-6M over UART with TinyGPS++
 ├── BatteryMonitor.h/.cpp            battery level through the divider
+├── PulseSensor.h/.cpp               beat detection and heart rate from the SP-203
+├── GasSensor.h/.cpp                 methane index from the MQ-2
 ├── CollarClock.h/.cpp               UTC clock from NTP or GPS, event ids
 ├── TelemetryPayload.h/.cpp          JSON body of the Edge API contract
 ├── EdgeHttpTransport.h/.cpp         Wi-Fi and HTTP POST to the Edge API
@@ -52,6 +56,9 @@ ichu-cattle-band-embedded-app/
 ├── BandConnectivityService.h/.cpp   chooses the route and drains the buffer
 ├── gps-neo6m.chip.c                 Wokwi NEO-6M chip
 ├── gps-neo6m.chip.json              chip pins and position sliders
+├── pulse-sensor.chip.c              Wokwi SP-203 pulse sensor chip
+├── pulse-sensor.chip.json           chip pins and heart rate slider
+├── pulse-sensor.chip.wasm           compiled pulse sensor chip
 ├── diagram.json                     Wokwi circuit
 ├── libraries.txt                    Wokwi library list
 ├── wokwi.toml                       Wokwi for VS Code configuration
@@ -102,11 +109,13 @@ The default partition scheme gives the application 1310720 bytes; the current fi
 
 ## Simulation in Wokwi
 
-**Wokwi for VS Code.** `wokwi.toml` points to `build/sketch.ino.bin` and `build/sketch.ino.elf`, which the build above produces, and declares the custom chip `gps-neo6m`. The chip binary `gps-neo6m.chip.wasm` is built from `gps-neo6m.chip.c` with the Wokwi chip toolchain. It is not committed yet and has not been compiled locally.
+**Wokwi for VS Code.** `wokwi.toml` points to `build/sketch.ino.bin` and `build/sketch.ino.elf`, which the build above produces, and declares the custom chips `gps-neo6m` and `pulse-sensor`. The chip binary `gps-neo6m.chip.wasm` is built from `gps-neo6m.chip.c` with the Wokwi chip toolchain. It is not committed yet and has not been compiled locally.
 
 **Wokwi web editor.** The project link will be recorded in `wokwi-project.txt` once the team publishes it.
 
 `diagram.json` wires the parts of the table above to the board. The `gps-neo6m` chip sends one `$GPRMC` and one `$GPGGA` sentence per second with a valid fix (HDOP 0.9, 8 satellites). Its `northMeters` and `eastMeters` sliders move the position from the development geofence center by up to ±2000 m, which takes the animal out of the geofence during a demo.
+
+Wokwi has no pulse sensor part, so the `pulse-sensor` chip outputs a PPG wave at 100 Hz: a systolic peak and a smaller dicrotic wave each beat. Its `bpm` slider sets the heart rate from 0 to 240; 0 means no skin contact and leaves the output flat. `pulse-sensor.chip.wasm` is compiled from `pulse-sensor.chip.c` with `wokwi-cli chip compile`. The MQ-2 is the built-in `wokwi-gas-sensor`; its `ppm` control raises the AO voltage.
 
 ---
 
@@ -135,10 +144,14 @@ A sensor that does not answer does not block its reading: the reading is still s
 | `body_temperature` | Temperature sensor not responding |
 | `activity_index` | Motion sensor not responding |
 | `position` | GPS receiver not responding |
+| `heart_rate` | Pulse sensor without contact |
+| `methane_index` | Gas sensor warming up |
 
 - The temperature sensor fails when the DS18B20 read fails.
 - A DS18B20 value outside 30–45 °C, the range the edge accepts, is sent as `Temperature out of physiological range`, so a collar off the animal still delivers its other measurements.
 - The motion sensor fails when the MPU-6050 gives no sample during the whole reporting interval.
+- The pulse sensor has no contact when fewer than two beat intervals were detected in the reporting interval. A heart rate outside 30–200 bpm, the range the edge accepts, is sent as `Heart rate out of physiological range`.
+- The MQ-2 needs about 60 s for its heater to settle, so readings in the first minute after boot send `Gas sensor warming up`.
 - The GPS fails only when the NEO-6M sends no NMEA data at all. A GPS that answers without a fix leaves `position` absent, which is not an invalid reason.
 
 ---
@@ -151,11 +164,11 @@ The firmware prints one summary line per reading. Angle brackets mark values tha
 [wifi] connecting to Wokwi-GUEST
 [wifi] connected, IP <address>
 [clock] NTP sync started
-[telemetry] event=<serial>-<boot>-<sequence> temp=<celsius>C activity=<0-100> battery=<percent>% position=<latitude>,<longitude> queued=<count>
+[telemetry] event=<serial>-<boot>-<sequence> temp=<celsius>C activity=<0-100> battery=<percent>% heart=<bpm>bpm methane=<0-100> position=<latitude>,<longitude> queued=<count>
 [edge] delivered <event id> (201)
 ```
 
-A failed sensor prints `temp=failed`, `activity=failed` or `position=failed` in place of its value, and a temperature outside 30–45 °C prints `temp=out-of-range`. A restart with queued readings prints `[buffer] restored <count> readings`. Other lines use the prefixes `[ble]`, `[buffer]`, `[gps]`, `[sensors]` and `[edge]`.
+A failed sensor prints `temp=failed`, `activity=failed` or `position=failed` in place of its value, and a temperature outside 30–45 °C prints `temp=out-of-range`. The pulse sensor prints `heart=no-contact` or `heart=out-of-range`, and the gas sensor prints `methane=warming-up` during its first minute. A restart with queued readings prints `[buffer] restored <count> readings`. Other lines use the prefixes `[ble]`, `[buffer]`, `[gps]`, `[sensors]` and `[edge]`.
 
 ---
 
@@ -171,6 +184,26 @@ where `a = (ax, ay, az)` is the acceleration in m/s². Movement appears as devia
 
 ---
 
+## Heart Rate and Methane Index
+
+The SP-203 output is sampled every 10 ms. A peak and a trough envelope follow the signal, decaying 0.5 mV per sample, and a beat is the rising crossing of their midpoint, with 50 mV of hysteresis. A signal with less than 300 mV between envelopes counts as no contact. Beats closer than 200 ms are ignored, and gaps longer than 3 s are not used as intervals. Over each 10 s reporting interval:
+
+```text
+heart rate = 60000 / median(beat intervals in ms)
+```
+
+The median keeps one missed or doubled beat from skewing the rate.
+
+The MQ-2 AO voltage maps linearly to a relative index:
+
+```text
+methane index = clamp(100 × AO millivolts / 3300, 0, 100)
+```
+
+The MQ-2 is neither calibrated nor selective (it also reacts to LPG, propane, hydrogen and alcohol), so the index shows change over time and is **not** a concentration in ppm.
+
+---
+
 ## Known Limitations
 
 - The queue of 60 readings in NVS survives reboots and power loss. A cut during a write can lose the reading being queued, and can resend a reading that was already delivered; the edge drops the resend by `event_id`. The boot counter in flash keeps event ids unique across reboots.
@@ -180,6 +213,8 @@ where `a = (ax, ay, az)` is the acceleration in m/s². Movement appears as devia
 - An HTTP request blocks the loop for at most `kHttpTimeoutMs`, and each DS18B20 conversion blocks for about 190 ms.
 - The battery percentage is a linear approximation of the Li-ion discharge curve.
 - The position accuracy is an approximation derived from HDOP.
+- The DS18B20 conversion and an HTTP request pause pulse sampling, which can delay one detected beat; the median absorbs it.
+- The SP-203 is a fingertip sensor; reading it through cattle skin and hair is unproven.
 - The physical prototype has not been tested yet.
 
 ---

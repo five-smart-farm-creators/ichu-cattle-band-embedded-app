@@ -16,6 +16,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Persistent queue in NVS: pending readings survive reboots and power loss.
 - `invalid_reasons` in the telemetry body for a body temperature, activity index or position that its sensor cannot provide.
 - `build` job in the Git Flow checks workflow, which compiles the firmware on every pull request.
+- Heart rate from an SP-203 pulse sensor (median beat interval per reporting interval) and a 0–100 methane index from an MQ-2 gas sensor, sent as `heart_rate` and `methane_index` with their own invalid reasons.
+- Wokwi `pulse-sensor` chip with a heart rate slider, and the MQ-2 gas sensor in the simulated circuit.
 
 ### Fixed
 

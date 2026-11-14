@@ -30,13 +30,20 @@ size_t TelemetryPayload::serialize(const TelemetryReading& reading, char* out, s
     if (reading.hasBatteryLevel) {
         document["battery_level"] = roundTo(reading.batteryLevel, 100.0);
     }
+    if (reading.hasHeartRate) {
+        document["heart_rate"] = roundTo(reading.heartRate, 100.0);
+    }
+    if (reading.hasMethaneIndex) {
+        document["methane_index"] = roundTo(reading.methaneIndex, 100.0);
+    }
     if (reading.hasPosition) {
         JsonObject position = document["position"].to<JsonObject>();
         position["latitude"] = roundTo(reading.latitude, 1e6);
         position["longitude"] = roundTo(reading.longitude, 1e6);
         position["accuracy_meters"] = roundTo(reading.accuracyMeters, 100.0);
     }
-    if (reading.bodyTemperatureFailed() || reading.activityIndexFailed || reading.positionFailed) {
+    if (reading.bodyTemperatureFailed() || reading.activityIndexFailed || reading.positionFailed ||
+        reading.heartRateFailed() || reading.methaneIndexWarmingUp) {
         JsonObject invalidReasons = document["invalid_reasons"].to<JsonObject>();
         if (reading.bodyTemperatureFailure == TemperatureFailure::NotResponding) {
             invalidReasons["body_temperature"] = "Temperature sensor not responding";
@@ -48,6 +55,14 @@ size_t TelemetryPayload::serialize(const TelemetryReading& reading, char* out, s
         }
         if (reading.positionFailed) {
             invalidReasons["position"] = "GPS receiver not responding";
+        }
+        if (reading.heartRateFailure == HeartRateFailure::NoContact) {
+            invalidReasons["heart_rate"] = "Pulse sensor without contact";
+        } else if (reading.heartRateFailure == HeartRateFailure::OutOfRange) {
+            invalidReasons["heart_rate"] = "Heart rate out of physiological range";
+        }
+        if (reading.methaneIndexWarmingUp) {
+            invalidReasons["methane_index"] = "Gas sensor warming up";
         }
     }
     const size_t length = measureJson(document);

@@ -9,8 +9,10 @@
 #include "CollarClock.h"
 #include "CollarConfig.h"
 #include "EdgeHttpTransport.h"
+#include "GasSensor.h"
 #include "GpsReceiver.h"
 #include "MotionSensor.h"
+#include "PulseSensor.h"
 #include "ReadingBuffer.h"
 #include "TelemetryReading.h"
 #include "TemperatureSensor.h"
@@ -19,6 +21,8 @@ static TemperatureSensor temperatureSensor;
 static MotionSensor motionSensor;
 static GpsReceiver gpsReceiver;
 static BatteryMonitor batteryMonitor;
+static PulseSensor pulseSensor;
+static GasSensor gasSensor;
 static CollarClock collarClock;
 static ActivityIndexCalculator activity;
 static ReadingBuffer buffer;
@@ -26,6 +30,7 @@ static EdgeHttpTransport edgeTransport;
 static BleGatewayTransport bleTransport;
 static BandConnectivityService connectivity(bleTransport, edgeTransport, buffer);
 static uint32_t lastMotionSampleMs = 0;
+static uint32_t lastPulseSampleMs = 0;
 static uint32_t lastReadingMs = 0;
 
 static void printSummary(const TelemetryReading& reading, size_t queued) {
@@ -44,6 +49,18 @@ static void printSummary(const TelemetryReading& reading, size_t queued) {
     }
     if (reading.hasBatteryLevel) {
         Serial.printf(" battery=%.2f%%", reading.batteryLevel);
+    }
+    if (reading.hasHeartRate) {
+        Serial.printf(" heart=%.2fbpm", reading.heartRate);
+    } else if (reading.heartRateFailure == HeartRateFailure::OutOfRange) {
+        Serial.print(" heart=out-of-range");
+    } else if (reading.heartRateFailure == HeartRateFailure::NoContact) {
+        Serial.print(" heart=no-contact");
+    }
+    if (reading.hasMethaneIndex) {
+        Serial.printf(" methane=%.2f", reading.methaneIndex);
+    } else if (reading.methaneIndexWarmingUp) {
+        Serial.print(" methane=warming-up");
     }
     if (reading.hasPosition) {
         Serial.printf(" position=%.6f,%.6f", reading.latitude, reading.longitude);
@@ -77,6 +94,24 @@ static void queueReading() {
         reading.activityIndexFailed = true;
     }
     activity.reset();
+    if (!pulseSensor.hasHeartRate()) {
+        reading.heartRateFailure = HeartRateFailure::NoContact;
+    } else {
+        const float bpm = pulseSensor.heartRate();
+        if (bpm < CollarConfig::kMinHeartRateBpm || bpm > CollarConfig::kMaxHeartRateBpm) {
+            reading.heartRateFailure = HeartRateFailure::OutOfRange;
+        } else {
+            reading.hasHeartRate = true;
+            reading.heartRate = bpm;
+        }
+    }
+    pulseSensor.reset();
+    if (gasSensor.isWarmingUp(millis())) {
+        reading.methaneIndexWarmingUp = true;
+    } else {
+        reading.hasMethaneIndex = true;
+        reading.methaneIndex = gasSensor.methaneIndex();
+    }
     reading.hasBatteryLevel = true;
     reading.batteryLevel = batteryMonitor.levelPercent();
     reading.hasPosition = gpsReceiver.position(reading.latitude, reading.longitude, reading.accuracyMeters);
@@ -103,6 +138,7 @@ void setup() {
     temperatureSensor.begin();
     motionSensor.begin();
     gpsReceiver.begin();
+    gasSensor.begin(millis());
     collarClock.begin();
     edgeTransport.begin();
     if (CollarConfig::kBleEnabled) {
@@ -124,6 +160,10 @@ void loop() {
         if (motionSensor.readAcceleration(ax, ay, az)) {
             activity.addSample(ax, ay, az);
         }
+    }
+    if (now - lastPulseSampleMs >= CollarConfig::kPulseSampleIntervalMs) {
+        lastPulseSampleMs = now;
+        pulseSensor.addSample(now);
     }
     if (now - lastReadingMs >= CollarConfig::kReadingIntervalMs) {
         lastReadingMs = now;
