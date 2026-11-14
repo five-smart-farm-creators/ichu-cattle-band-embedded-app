@@ -17,6 +17,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - `invalid_reasons` in the telemetry body for a body temperature, activity index or position that its sensor cannot provide.
 - `build` job in the Git Flow checks workflow, which compiles the firmware on every pull request.
 
+### Fixed
+
+- A body temperature outside 30–45 °C is sent in `invalid_reasons` as `Temperature out of physiological range` instead of making the edge reject the whole reading with 400.
+
 ### Changed
 
 - Wi-Fi credentials, the Edge API address and the device API key move from `CollarConfig.h` to `CollarSecrets.h`, which is git-ignored; a fresh clone builds with the values of `CollarSecrets.example.h`.

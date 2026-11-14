@@ -137,6 +137,7 @@ A sensor that does not answer does not block its reading: the reading is still s
 | `position` | GPS receiver not responding |
 
 - The temperature sensor fails when the DS18B20 read fails.
+- A DS18B20 value outside 30–45 °C, the range the edge accepts, is sent as `Temperature out of physiological range`, so a collar off the animal still delivers its other measurements.
 - The motion sensor fails when the MPU-6050 gives no sample during the whole reporting interval.
 - The GPS fails only when the NEO-6M sends no NMEA data at all. A GPS that answers without a fix leaves `position` absent, which is not an invalid reason.
 
@@ -154,7 +155,7 @@ The firmware prints one summary line per reading. Angle brackets mark values tha
 [edge] delivered <event id> (201)
 ```
 
-A failed sensor prints `temp=failed`, `activity=failed` or `position=failed` in place of its value. A restart with queued readings prints `[buffer] restored <count> readings`. Other lines use the prefixes `[ble]`, `[buffer]`, `[gps]`, `[sensors]` and `[edge]`.
+A failed sensor prints `temp=failed`, `activity=failed` or `position=failed` in place of its value, and a temperature outside 30–45 °C prints `temp=out-of-range`. A restart with queued readings prints `[buffer] restored <count> readings`. Other lines use the prefixes `[ble]`, `[buffer]`, `[gps]`, `[sensors]` and `[edge]`.
 
 ---
 
