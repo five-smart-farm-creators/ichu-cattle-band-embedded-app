@@ -56,6 +56,7 @@ ichu-cattle-band-embedded-app/
 ├── BandConnectivityService.h/.cpp   chooses the route and drains the buffer
 ├── gps-neo6m.chip.c                 Wokwi NEO-6M chip
 ├── gps-neo6m.chip.json              chip pins and position sliders
+├── gps-neo6m.chip.wasm              compiled chip loaded by Wokwi
 ├── pulse-sensor.chip.c              Wokwi SP-203 pulse sensor chip
 ├── pulse-sensor.chip.json           chip pins and heart rate slider
 ├── pulse-sensor.chip.wasm           compiled pulse sensor chip
@@ -109,7 +110,7 @@ The default partition scheme gives the application 1310720 bytes; the current fi
 
 ## Simulation in Wokwi
 
-**Wokwi for VS Code.** `wokwi.toml` points to `build/sketch.ino.bin` and `build/sketch.ino.elf`, which the build above produces, and declares the custom chips `gps-neo6m` and `pulse-sensor`. The chip binary `gps-neo6m.chip.wasm` is built from `gps-neo6m.chip.c` with the Wokwi chip toolchain. It is not committed yet and has not been compiled locally.
+**Wokwi for VS Code.** `wokwi.toml` points to `build/sketch.ino.bin` and `build/sketch.ino.elf`, which the build above produces, and declares the custom chips `gps-neo6m` and `pulse-sensor`. Both chip binaries are committed, so a fresh clone runs them without extra tools. After changing a chip's `.c` file, rebuild it with `wokwi-cli chip compile <chip>.chip.c -o <chip>.chip.wasm` and commit both files; the `wokwi-api.h` that the command downloads is git-ignored.
 
 **Wokwi web editor.** The project link will be recorded in `wokwi-project.txt` once the team publishes it.
 
