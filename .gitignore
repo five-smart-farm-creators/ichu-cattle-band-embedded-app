@@ -6,3 +6,5 @@ build/
 CollarSecrets.h
 # macOS Finder metadata
 .DS_Store
+# Header downloaded by wokwi-cli chip compile
+wokwi-api.h
