@@ -2,5 +2,9 @@ build/
 .pio/
 /.idea/
 /.vscode/
+# Real device secrets, copied from CollarSecrets.example.h
+CollarSecrets.h
 # macOS Finder metadata
 .DS_Store
+# Header downloaded by wokwi-cli chip compile
+wokwi-api.h

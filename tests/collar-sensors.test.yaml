@@ -1,0 +1,18 @@
+# Wokwi CI scenario: the collar reports heart rate and the gas warm-up, and marks
+# a lost or implausible pulse as invalid. No edge is reachable, so readings stay queued.
+name: Collar sensors
+version: 1
+author: SmartFarm
+
+steps:
+  - wait-serial: 'methane=warming-up'
+  - set-control:
+      part-id: pulse
+      control: bpm
+      value: 0
+  - wait-serial: 'heart=no-contact'
+  - set-control:
+      part-id: pulse
+      control: bpm
+      value: 220
+  - wait-serial: 'heart=out-of-range'

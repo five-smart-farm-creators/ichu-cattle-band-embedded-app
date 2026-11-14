@@ -58,3 +58,37 @@ jobs:
             sh .githooks/commit-msg "$RUNNER_TEMP/commit-message" || status=1
           done
           exit $status
+
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Absent on forks and until the team adds the secret; the simulation is then skipped.
+      WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Install the ESP32 core and libraries
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.3.4
+          arduino-cli lib update-index
+          arduino-cli lib install ArduinoJson OneWire DallasTemperature "Adafruit MPU6050" "Adafruit Unified Sensor" TinyGPSPlus
+
+      - name: Compile the firmware
+        run: |
+          mkdir -p ../build-src/sketch
+          cp *.ino *.h *.cpp ../build-src/sketch/
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 --warnings all --output-dir build ../build-src/sketch
+
+      - name: Simulate the collar in Wokwi
+        if: env.WOKWI_CLI_TOKEN != ''
+        uses: wokwi/wokwi-ci-action@v1
+        with:
+          token: ${{ secrets.WOKWI_CLI_TOKEN }}
+          path: /
+          timeout: 180000
+          scenario: tests/collar-sensors.test.yaml
