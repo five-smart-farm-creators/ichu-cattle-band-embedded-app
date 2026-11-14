@@ -213,7 +213,7 @@ The MQ-2 is neither calibrated nor selective (it also reacts to LPG, propane, hy
 - An HTTP request blocks the loop for at most `kHttpTimeoutMs`, and each DS18B20 conversion blocks for about 190 ms.
 - The battery percentage is a linear approximation of the Li-ion discharge curve.
 - The position accuracy is an approximation derived from HDOP.
-- The DS18B20 conversion and an HTTP request pause pulse sampling, which can delay one detected beat; the median absorbs it.
+- Pulse sampling stops while the loop blocks: about 190 ms for each DS18B20 conversion and up to `kHttpTimeoutMs` for an HTTP POST. Gaps longer than 3 s are not used as beat intervals, and the median absorbs a delayed beat.
 - The SP-203 is a fingertip sensor; reading it through cattle skin and hair is unproven.
 - The physical prototype has not been tested yet.
 
