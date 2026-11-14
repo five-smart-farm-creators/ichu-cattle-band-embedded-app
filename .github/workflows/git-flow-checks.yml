@@ -61,6 +61,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      # Absent on forks and until the team adds the secret; the simulation is then skipped.
+      WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -79,4 +82,13 @@ jobs:
         run: |
           mkdir -p ../build-src/sketch
           cp *.ino *.h *.cpp ../build-src/sketch/
-          arduino-cli compile --fqbn esp32:esp32:esp32s3 --warnings all ../build-src/sketch
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 --warnings all --output-dir build ../build-src/sketch
+
+      - name: Simulate the collar in Wokwi
+        if: env.WOKWI_CLI_TOKEN != ''
+        uses: wokwi/wokwi-ci-action@v1
+        with:
+          token: ${{ secrets.WOKWI_CLI_TOKEN }}
+          path: /
+          timeout: 180000
+          scenario: tests/collar-sensors.test.yaml

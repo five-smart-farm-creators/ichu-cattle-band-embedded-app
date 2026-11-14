@@ -112,6 +112,8 @@ The default partition scheme gives the application 1310720 bytes; the current fi
 
 **Wokwi for VS Code.** `wokwi.toml` points to `build/sketch.ino.bin` and `build/sketch.ino.elf`, which the build above produces, and declares the custom chips `gps-neo6m` and `pulse-sensor`. Both chip binaries are committed, so a fresh clone runs them without extra tools. After changing a chip's `.c` file, rebuild it with `wokwi-cli chip compile <chip>.chip.c -o <chip>.chip.wasm` and commit both files; the `wokwi-api.h` that the command downloads is git-ignored.
 
+**Automated simulation.** The `build` job of the Git Flow checks runs `tests/collar-sensors.test.yaml` in Wokwi CI after compiling. The scenario waits for the gas warm-up reason, sets the pulse slider to 0 and to 220, and expects `heart=no-contact` and `heart=out-of-range`. It needs a `WOKWI_CLI_TOKEN` repository secret, created in the Wokwi CI dashboard; without it the step is skipped.
+
 **Wokwi web editor.** The project link will be recorded in `wokwi-project.txt` once the team publishes it.
 
 `diagram.json` wires the parts of the table above to the board. The `gps-neo6m` chip sends one `$GPRMC` and one `$GPGGA` sentence per second with a valid fix (HDOP 0.9, 8 satellites). Its `northMeters` and `eastMeters` sliders move the position from the development geofence center by up to ±2000 m, which takes the animal out of the geofence during a demo.
