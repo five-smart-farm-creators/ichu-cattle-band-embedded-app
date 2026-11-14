@@ -32,7 +32,9 @@ static void printSummary(const TelemetryReading& reading, size_t queued) {
     Serial.printf("[telemetry] event=%s", reading.eventId);
     if (reading.hasBodyTemperature) {
         Serial.printf(" temp=%.2fC", reading.bodyTemperature);
-    } else if (reading.bodyTemperatureFailed) {
+    } else if (reading.bodyTemperatureFailure == TemperatureFailure::OutOfRange) {
+        Serial.print(" temp=out-of-range");
+    } else if (reading.bodyTemperatureFailed()) {
         Serial.print(" temp=failed");
     }
     if (reading.hasActivityIndex) {
@@ -58,11 +60,14 @@ static void queueReading() {
         collarClock.formatUtc(reading.recordedAt, sizeof(reading.recordedAt));
     }
     float celsius = 0.0f;
-    if (temperatureSensor.read(celsius)) {
+    if (!temperatureSensor.read(celsius)) {
+        reading.bodyTemperatureFailure = TemperatureFailure::NotResponding;
+    } else if (celsius < CollarConfig::kMinBodyTemperatureC || celsius > CollarConfig::kMaxBodyTemperatureC) {
+        // The edge rejects the whole reading for this value, so only the temperature is dropped.
+        reading.bodyTemperatureFailure = TemperatureFailure::OutOfRange;
+    } else {
         reading.hasBodyTemperature = true;
         reading.bodyTemperature = celsius;
-    } else {
-        reading.bodyTemperatureFailed = true;
     }
     if (activity.hasSamples()) {
         reading.hasActivityIndex = true;

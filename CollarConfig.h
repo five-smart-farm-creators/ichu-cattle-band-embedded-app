@@ -35,6 +35,11 @@ constexpr uint8_t kGpsTxPin = 17;
 constexpr uint32_t kGpsBaud = 9600;
 constexpr uint8_t kBatteryPin = 1;
 
+// Mirror the edge and backend BodyTemperature range, so a collar off the animal
+// reports an invalid temperature instead of losing the whole reading.
+constexpr float kMinBodyTemperatureC = 30.0f;
+constexpr float kMaxBodyTemperatureC = 45.0f;
+
 constexpr uint32_t kReadingIntervalMs = 10000;
 constexpr uint32_t kMotionSampleIntervalMs = 50;
 constexpr uint32_t kGpsMaxAgeMs = 5000;
