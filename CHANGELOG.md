@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+
+- End-to-end Wokwi job `end-to-end` in the Git Flow checks, which runs the collar firmware against a real Edge API and checks that a 41 °C body temperature raises a Critical Temperature alert.
+
 ## [0.1.0] - 2026-11-14
 
 ### Added
