@@ -92,3 +92,161 @@ jobs:
           path: /
           timeout: 180000
           scenario: tests/collar-sensors.test.yaml
+
+  end-to-end:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      # Absent on forks and until the team adds the secret; the end-to-end simulation is then skipped.
+      WOKWI_CLI_TOKEN: ${{ secrets.WOKWI_CLI_TOKEN }}
+      # Edge API settings for this run; the collar reaches the API through a bore tunnel.
+      APP_ENV: development
+      # Debug mode would expose the Werkzeug debugger through the public tunnel.
+      DEBUG: "false"
+      HOST: 127.0.0.1
+      PORT: "5000"
+      SEED_DEVELOPMENT_DATA: "true"
+      CLOUD_API_BASE_URL: ""
+      PANEL_DEVICE_ID: bf6c7b5d-5c8a-4ba6-8fcc-6a7b8c9daeb5
+      COLLAR_DEVICE_ID: 9d4a5f3b-3a6e-4f84-8daa-4e5f6a7b8c93
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the Edge API
+        if: env.WOKWI_CLI_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          repository: five-smart-farm-creators/ichu-edge-service
+          ref: develop
+          path: edge
+
+      - name: Set up Python
+        if: env.WOKWI_CLI_TOKEN != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install the Edge API dependencies
+        if: env.WOKWI_CLI_TOKEN != ''
+        run: pip install -r edge/requirements.txt
+
+      - name: Create a throwaway device key
+        if: env.WOKWI_CLI_TOKEN != ''
+        run: |
+          set -euo pipefail
+          key="$(openssl rand -hex 16)"
+          echo "::add-mask::$key"
+          echo "DEVELOPMENT_DEVICE_API_KEY=$key" >> "$GITHUB_ENV"
+          # The runner context is not available in job-level env, so the path is set here.
+          echo "DATABASE_PATH=$RUNNER_TEMP/edge.db" >> "$GITHUB_ENV"
+
+      - name: Seed the rules and the collar assignment
+        if: env.WOKWI_CLI_TOKEN != ''
+        env:
+          PYTHONPATH: ${{ github.workspace }}/edge
+        run: python tests/e2e/seed_edge_rules.py
+
+      - name: Start the Edge API
+        if: env.WOKWI_CLI_TOKEN != ''
+        working-directory: edge
+        run: |
+          set -euo pipefail
+          nohup python app.py > "$RUNNER_TEMP/edge.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            status="$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "X-API-Key: $DEVELOPMENT_DEVICE_API_KEY" \
+              "http://127.0.0.1:5000/api/v1/monitoring/alerts?device_id=$PANEL_DEVICE_ID&limit=1" || true)"
+            if [ "$status" = "200" ]; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "The Edge API did not answer 200 within 30 s" >&2
+          exit 1
+
+      # The simulated ESP32 cannot reach the runner's localhost, so the Edge API is tunneled over TCP.
+      - name: Open a public tunnel and write the collar secrets
+        if: env.WOKWI_CLI_TOKEN != ''
+        run: |
+          set -euo pipefail
+          curl -fsSL -o "$RUNNER_TEMP/bore.tar.gz" https://github.com/ekzhang/bore/releases/download/v0.6.0/bore-v0.6.0-x86_64-unknown-linux-musl.tar.gz
+          tar -xzf "$RUNNER_TEMP/bore.tar.gz" -C "$RUNNER_TEMP"
+          nohup "$RUNNER_TEMP/bore" local 5000 --to bore.pub > "$RUNNER_TEMP/bore.log" 2>&1 &
+          port=""
+          for _ in $(seq 1 30); do
+            port="$(sed -n 's/.*listening at bore\.pub:\([0-9]*\).*/\1/p' "$RUNNER_TEMP/bore.log" | head -n 1)"
+            if [ -n "$port" ]; then
+              break
+            fi
+            sleep 1
+          done
+          if [ -z "$port" ]; then
+            echo "bore did not report a public port within 30 s" >&2
+            exit 1
+          fi
+          cat > CollarSecrets.h <<EOF
+          #ifndef COLLAR_SECRETS_H
+          #define COLLAR_SECRETS_H
+
+          // Written for one run by the end-to-end job; git-ignored and never committed.
+          namespace CollarSecrets {
+
+          constexpr char kDeviceApiKey[] = "$DEVELOPMENT_DEVICE_API_KEY";
+          constexpr char kWifiSsid[] = "Wokwi-GUEST";
+          constexpr char kWifiPassword[] = "";
+          constexpr char kEdgeBaseUrl[] = "http://bore.pub:$port";
+
+          }  // namespace CollarSecrets
+
+          #endif  // COLLAR_SECRETS_H
+          EOF
+
+      - uses: arduino/setup-arduino-cli@v2
+        if: env.WOKWI_CLI_TOKEN != ''
+
+      - name: Install the ESP32 core and libraries
+        if: env.WOKWI_CLI_TOKEN != ''
+        run: |
+          set -euo pipefail
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32@3.3.4
+          arduino-cli lib update-index
+          arduino-cli lib install ArduinoJson OneWire DallasTemperature "Adafruit MPU6050" "Adafruit Unified Sensor" TinyGPSPlus
+
+      - name: Compile the firmware
+        if: env.WOKWI_CLI_TOKEN != ''
+        run: |
+          set -euo pipefail
+          mkdir -p ../build-src/sketch
+          cp *.ino *.h *.cpp ../build-src/sketch/
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 --warnings all --output-dir build ../build-src/sketch
+
+      - name: Simulate the collar against the Edge API in Wokwi
+        if: env.WOKWI_CLI_TOKEN != ''
+        uses: wokwi/wokwi-ci-action@v1
+        with:
+          token: ${{ secrets.WOKWI_CLI_TOKEN }}
+          path: /
+          timeout: 180000
+          scenario: tests/collar-edge.test.yaml
+
+      - name: Check the Critical Temperature alert from the collar
+        if: env.WOKWI_CLI_TOKEN != ''
+        run: |
+          set -euo pipefail
+          listing="$(curl -fsS -H "X-API-Key: $DEVELOPMENT_DEVICE_API_KEY" \
+            "http://127.0.0.1:5000/api/v1/monitoring/alerts?device_id=$PANEL_DEVICE_ID&limit=20")"
+          if ! printf '%s' "$listing" | jq -e --arg collar "$COLLAR_DEVICE_ID" \
+            'any(.alerts[]; .severity == "Critical" and .type == "Temperature" and .device_id == $collar)' > /dev/null; then
+            echo "The Edge API lists no Critical Temperature alert from the collar" >&2
+            exit 1
+          fi
+
+      - name: Show the Edge API and tunnel logs after a failure
+        if: failure() && env.WOKWI_CLI_TOKEN != ''
+        run: |
+          set -euo pipefail
+          tail -n 100 "$RUNNER_TEMP/edge.log" || true
+          tail -n 100 "$RUNNER_TEMP/bore.log" || true
