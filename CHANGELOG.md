@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-14
+
 ### Added
 
 - End-to-end Wokwi job `end-to-end` in the Git Flow checks, which runs the collar firmware against a real Edge API and checks that a 41 °C body temperature raises a Critical Temperature alert.
@@ -36,5 +38,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Wi-Fi credentials, the Edge API address and the device API key move from `CollarConfig.h` to `CollarSecrets.h`, which is git-ignored; a fresh clone builds with the values of `CollarSecrets.example.h`.
 - BLE is disabled by default (`kBleEnabled = false`); the demo and Wokwi use Wi-Fi.
 
-[Unreleased]: https://github.com/five-smart-farm-creators/ichu-cattle-band-embedded-app/compare/v0.1.0...develop
+[Unreleased]: https://github.com/five-smart-farm-creators/ichu-cattle-band-embedded-app/compare/v0.1.1...develop
+[0.1.1]: https://github.com/five-smart-farm-creators/ichu-cattle-band-embedded-app/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/five-smart-farm-creators/ichu-cattle-band-embedded-app/releases/tag/v0.1.0
