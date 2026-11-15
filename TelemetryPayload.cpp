@@ -16,7 +16,7 @@ double roundTo(double value, double scale) {
 
 size_t TelemetryPayload::serialize(const TelemetryReading& reading, char* out, size_t capacity) {
     JsonDocument document;
-    document["device_id"] = CollarConfig::kDeviceId;
+    document["device_id"] = CollarSecrets::kDeviceId;
     document["event_id"] = reading.eventId;
     if (reading.recordedAt[0] != '\0') {
         document["recorded_at"] = reading.recordedAt;

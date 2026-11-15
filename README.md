@@ -78,13 +78,14 @@ The sources stay at the root so that the project also opens in the Wokwi web edi
 
 Copy `CollarSecrets.example.h` to `CollarSecrets.h` and set the values there. The copy is git-ignored, and a fresh clone builds with the example values, which target Wokwi.
 
+- `kDeviceId` is the id that the ICHU service issued when the collar was registered; the example holds the development collar.
 - `kDeviceApiKey` must equal the `DEVICE_API_KEY` or `DEVELOPMENT_DEVICE_API_KEY` registered in the Edge API.
 - `kWifiSsid` and `kWifiPassword` select the network. The ESP32-S3 joins only 2.4 GHz networks.
 - `kEdgeBaseUrl` points to the Edge API. The Wokwi value reaches the host through `host.wokwi.internal`. On hardware, set it to the PC LAN address, for example `http://192.168.1.20:5000`, and start the Edge API with `HOST=0.0.0.0` so that it listens on the LAN.
 
 Edit `CollarConfig.h` for the rest:
 
-- `kDeviceId` and `kDeviceSerial` identify the development collar.
+- `kDeviceSerial` names the collar in event ids and over BLE.
 - `kBleEnabled` turns the BLE route on or off. It is off by default.
 - Pins, intervals, the activity full scale and the battery thresholds are in the same file.
 

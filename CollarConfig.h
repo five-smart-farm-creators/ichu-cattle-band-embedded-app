@@ -14,7 +14,6 @@
 // Values that differ between the simulation and the hardware prototype live here.
 namespace CollarConfig {
 
-constexpr char kDeviceId[] = "9d4a5f3b-3a6e-4f84-8daa-4e5f6a7b8c93";
 constexpr char kDeviceSerial[] = "ICHU-DEV-0001";
 
 constexpr char kTelemetryReadingsPath[] = "/api/v1/monitoring/telemetry-readings";
