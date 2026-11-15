@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+
+- Published Wokwi web project, linked from `wokwi-project.txt` and the README.
+
 ### Changed
 
 - `kDeviceId` moves from `CollarConfig.h` to `CollarSecrets.h`, because the ICHU service issues a different id to each registered collar.

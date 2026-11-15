@@ -63,7 +63,7 @@ ichu-cattle-band-embedded-app/
 ├── diagram.json                     Wokwi circuit
 ├── libraries.txt                    Wokwi library list
 ├── wokwi.toml                       Wokwi for VS Code configuration
-├── wokwi-project.txt                Wokwi project link (pending)
+├── wokwi-project.txt                Wokwi project link
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE.md
@@ -115,7 +115,7 @@ The default partition scheme gives the application 1310720 bytes; the current fi
 
 **Automated simulation.** The `build` job of the Git Flow checks runs `tests/collar-sensors.test.yaml` in Wokwi CI after compiling. The scenario waits for the gas warm-up reason, sets the pulse slider to 0 and to 220, and expects `heart=no-contact` and `heart=out-of-range`. It needs a `WOKWI_CLI_TOKEN` repository secret, created in the Wokwi CI dashboard; without it the step is skipped. The `end-to-end` job starts the Edge API on the runner and reaches it from the simulated collar through a public `bore.pub` tunnel and a throwaway device key. It raises the DS18B20 control to 41 °C, a fever, and fails unless the Edge API then lists a Critical Temperature alert for the collar.
 
-**Wokwi web editor.** The project link will be recorded in `wokwi-project.txt` once the team publishes it.
+**Wokwi web editor.** Open the published project at <https://wokwi.com/projects/480787162969005057>. The web editor shows the circuit and runs the firmware, but it reaches a local Edge API only with a paid private gateway, so the connected demo runs in Wokwi for VS Code.
 
 `diagram.json` wires the parts of the table above to the board. The `gps-neo6m` chip sends one `$GPRMC` and one `$GPGGA` sentence per second with a valid fix (HDOP 0.9, 8 satellites). Its `northMeters` and `eastMeters` sliders move the position from the development geofence center by up to ±2000 m, which takes the animal out of the geofence during a demo.
 
