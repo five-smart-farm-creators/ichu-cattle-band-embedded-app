@@ -1,0 +1,14 @@
+# Wokwi CI scenario: the collar firmware, not a simulator, delivers readings to a real Edge API,
+# and a 41 C fever reading must reach it so that the Edge API raises a Critical alert.
+name: Collar edge
+version: 1
+author: SmartFarm
+
+steps:
+  - wait-serial: '[edge] delivered'
+  - set-control:
+      part-id: temp
+      control: temperature
+      value: 41
+  - wait-serial: 'temp=41'
+  - wait-serial: '[edge] delivered'
