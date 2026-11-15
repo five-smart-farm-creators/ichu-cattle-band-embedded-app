@@ -191,6 +191,7 @@ jobs:
           // Written for one run by the end-to-end job; git-ignored and never committed.
           namespace CollarSecrets {
 
+          constexpr char kDeviceId[] = "$COLLAR_DEVICE_ID";
           constexpr char kDeviceApiKey[] = "$DEVELOPMENT_DEVICE_API_KEY";
           constexpr char kWifiSsid[] = "Wokwi-GUEST";
           constexpr char kWifiPassword[] = "";

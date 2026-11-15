@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Changed
+
+- `kDeviceId` moves from `CollarConfig.h` to `CollarSecrets.h`, because the ICHU service issues a different id to each registered collar.
+
 ## [0.1.1] - 2026-11-14
 
 ### Added
