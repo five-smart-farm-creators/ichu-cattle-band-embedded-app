@@ -13,6 +13,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ### Changed
 
 - `kDeviceId` moves from `CollarConfig.h` to `CollarSecrets.h`, because the ICHU service issues a different id to each registered collar.
+- Migrated to the Modest IoT Nano Framework v1.3.0: sensors, Wi-Fi, HTTP delivery, the offline queue and NTP come from the framework. The Edge JSON body does not change.
+- The collar sends its device key as `Authorization: ApiKey <key>`, which the Edge API accepts next to `X-API-Key`.
+- Readings that cannot be sent wait in LittleFS (60 readings) instead of NVS, and are replayed after the next successful send.
+- The activity index is the RMS deviation from 1 g over each reporting interval, and the methane index is computed from the raw ADC counts instead of millivolts.
+- `GPS receiver not responding` is no longer sent, because the framework `GeolocationSensor` cannot report it. The DS18B20 keeps the DallasTemperature driver, which the framework `OneWireTemperatureSensor` cannot replace in Wokwi.
+
+### Removed
+
+- The BLE route to the portable gateway and its configuration. The firmware sends over Wi-Fi only.
 
 ## [0.1.1] - 2026-11-14
 

@@ -76,13 +76,15 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@3.3.4
           arduino-cli lib update-index
-          arduino-cli lib install ArduinoJson OneWire DallasTemperature "Adafruit MPU6050" "Adafruit Unified Sensor" TinyGPSPlus
+          arduino-cli lib install ArduinoJson OneWire DallasTemperature Modest-IoT-Nano-Framework MQTT
 
       - name: Compile the firmware
         run: |
           mkdir -p ../build-src/sketch
           cp *.ino *.h *.cpp ../build-src/sketch/
           arduino-cli compile --fqbn esp32:esp32:esp32s3 --warnings all --output-dir build ../build-src/sketch
+          # Wokwi needs the partition table for LittleFS; the trailing erased flash is dropped to keep the upload small.
+          python3 -c "d=open('build/sketch.ino.merged.bin','rb').read().rstrip(b'\xff'); open('build/sketch.ino.flash.bin','wb').write(d)"
 
       - name: Simulate the collar in Wokwi
         if: env.WOKWI_CLI_TOKEN != ''
@@ -214,7 +216,7 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install esp32:esp32@3.3.4
           arduino-cli lib update-index
-          arduino-cli lib install ArduinoJson OneWire DallasTemperature "Adafruit MPU6050" "Adafruit Unified Sensor" TinyGPSPlus
+          arduino-cli lib install ArduinoJson OneWire DallasTemperature Modest-IoT-Nano-Framework MQTT
 
       - name: Compile the firmware
         if: env.WOKWI_CLI_TOKEN != ''
@@ -223,6 +225,8 @@ jobs:
           mkdir -p ../build-src/sketch
           cp *.ino *.h *.cpp ../build-src/sketch/
           arduino-cli compile --fqbn esp32:esp32:esp32s3 --warnings all --output-dir build ../build-src/sketch
+          # Wokwi needs the partition table for LittleFS; the trailing erased flash is dropped to keep the upload small.
+          python3 -c "d=open('build/sketch.ino.merged.bin','rb').read().rstrip(b'\xff'); open('build/sketch.ino.flash.bin','wb').write(d)"
 
       - name: Simulate the collar against the Edge API in Wokwi
         if: env.WOKWI_CLI_TOKEN != ''

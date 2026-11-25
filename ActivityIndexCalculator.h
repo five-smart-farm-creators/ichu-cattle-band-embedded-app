@@ -3,16 +3,17 @@
 
 #include <stdint.h>
 
-// Accumulates acceleration samples over one reporting interval and reduces them to one index.
+// Reduces the acceleration magnitudes of one reporting interval to one index.
 class ActivityIndexCalculator {
 public:
-    void addSample(float ax, float ay, float az);
-    bool hasSamples() const;
+    // Magnitude of the acceleration vector in g, as the framework's ImuSensor reports it.
+    void addSample(float magnitudeInGForce);
+    // Zero when no sample arrived: the ImuSensor reports only changed readings, so a quiet animal has none.
     float index() const;
     void reset();
 
 private:
-    float deviationSum_ = 0.0f;
+    float sumOfSquaredDeviations_ = 0.0f; ///< Squared deviation from 1 g, in (m/s^2)^2.
     uint32_t sampleCount_ = 0;
 };
 
