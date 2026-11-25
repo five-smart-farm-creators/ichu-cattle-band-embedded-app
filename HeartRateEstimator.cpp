@@ -1,11 +1,11 @@
-#include "PulseSensor.h"
+#include "HeartRateEstimator.h"
 
 #include <Arduino.h>
 #include <algorithm>
 
 #include "CollarConfig.h"
 
-void PulseSensor::addSample(uint32_t nowMs) {
+void HeartRateEstimator::addSample(const uint32_t nowMs) {
     const float mv = analogReadMilliVolts(CollarConfig::kPulsePin);
     if (!envelopeStarted_) {
         peakMv_ = mv;
@@ -39,11 +39,11 @@ void PulseSensor::addSample(uint32_t nowMs) {
     }
 }
 
-bool PulseSensor::hasHeartRate() const {
+bool HeartRateEstimator::hasHeartRate() const {
     return intervalCount_ >= CollarConfig::kPulseMinIntervals;
 }
 
-float PulseSensor::heartRate() const {
+float HeartRateEstimator::heartRate() const {
     uint16_t sorted[kMaxIntervals];
     std::copy(intervalsMs_, intervalsMs_ + intervalCount_, sorted);
     std::sort(sorted, sorted + intervalCount_);
@@ -52,6 +52,6 @@ float PulseSensor::heartRate() const {
     return 60000.0f / medianMs;
 }
 
-void PulseSensor::reset() {
+void HeartRateEstimator::reset() {
     intervalCount_ = 0;
 }

@@ -16,7 +16,7 @@ double roundTo(double value, double scale) {
 
 size_t TelemetryPayload::serialize(const TelemetryReading& reading, char* out, size_t capacity) {
     JsonDocument document;
-    document["device_id"] = CollarConfig::kDeviceId;
+    document["device_id"] = CollarSecrets::kDeviceId;
     document["event_id"] = reading.eventId;
     if (reading.recordedAt[0] != '\0') {
         document["recorded_at"] = reading.recordedAt;
@@ -42,19 +42,16 @@ size_t TelemetryPayload::serialize(const TelemetryReading& reading, char* out, s
         position["longitude"] = roundTo(reading.longitude, 1e6);
         position["accuracy_meters"] = roundTo(reading.accuracyMeters, 100.0);
     }
-    if (reading.bodyTemperatureFailed() || reading.activityIndexFailed || reading.positionFailed ||
-        reading.heartRateFailed() || reading.methaneIndexWarmingUp) {
+    if (reading.bodyTemperatureFailed || reading.bodyTemperatureOutOfRange || reading.activityIndexFailed || reading.heartRateFailed() ||
+        reading.methaneIndexWarmingUp) {
         JsonObject invalidReasons = document["invalid_reasons"].to<JsonObject>();
-        if (reading.bodyTemperatureFailure == TemperatureFailure::NotResponding) {
+        if (reading.bodyTemperatureFailed) {
             invalidReasons["body_temperature"] = "Temperature sensor not responding";
-        } else if (reading.bodyTemperatureFailure == TemperatureFailure::OutOfRange) {
+        } else if (reading.bodyTemperatureOutOfRange) {
             invalidReasons["body_temperature"] = "Temperature out of physiological range";
         }
         if (reading.activityIndexFailed) {
             invalidReasons["activity_index"] = "Motion sensor not responding";
-        }
-        if (reading.positionFailed) {
-            invalidReasons["position"] = "GPS receiver not responding";
         }
         if (reading.heartRateFailure == HeartRateFailure::NoContact) {
             invalidReasons["heart_rate"] = "Pulse sensor without contact";

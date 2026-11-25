@@ -48,15 +48,20 @@ void CollarClock::begin() {
     preferences.end();
 }
 
-void CollarClock::update(bool wifiConnected, GpsReceiver& gps) {
-    if (wifiConnected && !ntpRequested_) {
-        configTime(0, 0, CollarConfig::kNtpServer);
-        ntpRequested_ = true;
-        Serial.println("[clock] NTP sync started");
-    }
+void CollarClock::setFromGpsWhenOffline(const bool wifiConnected, const LocationData& location) {
     // NTP has priority; GPS time is used only while there is no Wi-Fi to reach an NTP server.
+    if (wifiConnected || isValid() || location.month == 0 || location.day == 0) {
+        return;
+    }
+    // The framework stores the year as two digits; tm_year counts from 1900.
     tm utc{};
-    if (!wifiConnected && !isValid() && gps.utcDateTime(utc) && setClockFromGps(utc)) {
+    utc.tm_year = 100 + location.year;
+    utc.tm_mon = location.month - 1;
+    utc.tm_mday = location.day;
+    utc.tm_hour = location.hour;
+    utc.tm_min = location.minute;
+    utc.tm_sec = location.second;
+    if (setClockFromGps(utc)) {
         Serial.println("[clock] set from GPS");
     }
 }

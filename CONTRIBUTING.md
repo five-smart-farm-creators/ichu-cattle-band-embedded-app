@@ -13,7 +13,7 @@ This guide covers how to set up, change, review and release the ICHU Cattle Band
 
 ```sh
 arduino-cli core install esp32:esp32@3.3.4
-arduino-cli lib install ArduinoJson OneWire DallasTemperature "Adafruit MPU6050" "Adafruit Unified Sensor" TinyGPSPlus
+arduino-cli lib install ArduinoJson Modest-IoT-Nano-Framework MQTT
 git config core.hooksPath .githooks
 ```
 
@@ -25,10 +25,10 @@ arduino-cli compile --fqbn esp32:esp32:esp32s3 --warnings all --output-dir build
 
 ## Project structure and code quality
 
-- One class per responsibility in PascalCase files with include guards: sensors (hardware access), domain types and computations without Arduino headers, transports (BLE and HTTP) and the connectivity service that chooses between them. `sketch.ino` only wires them together.
+- One class per responsibility in PascalCase files with include guards. Sensors, Wi-Fi and HTTP come from the Modest IoT Nano Framework; the project keeps the device mediator (`CollarDevice`), the Edge JSON body and the computations without framework types. `sketch.ino` only wires them together.
 - Files stay at the repository root so that the project also opens in the Wokwi web editor.
 - Configuration lives in `CollarConfig.h` as `constexpr` values, never as `#define` macros.
-- `loop()` never blocks: periodic work is scheduled with `millis()`, not `delay()`.
+- `loop()` never blocks: periodic work runs on the framework's scheduler and tasks, not in `loop()`.
 - Comments are in English and short (1–2 lines) and explain why, not what.
 - Every change must compile for `esp32:esp32:esp32s3` without warnings from the project files.
 
