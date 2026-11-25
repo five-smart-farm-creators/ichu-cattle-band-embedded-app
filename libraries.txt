@@ -2,8 +2,5 @@
 # See https://docs.wokwi.com/guides/libraries
 
 ArduinoJson
-OneWire
-DallasTemperature
-Adafruit MPU6050
-Adafruit Unified Sensor
-TinyGPSPlus
+Modest-IoT-Nano-Framework
+MQTT

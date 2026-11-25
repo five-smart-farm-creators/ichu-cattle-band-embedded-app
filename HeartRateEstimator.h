@@ -1,13 +1,14 @@
-#ifndef PULSE_SENSOR_H
-#define PULSE_SENSOR_H
+#ifndef HEART_RATE_ESTIMATOR_H
+#define HEART_RATE_ESTIMATOR_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-// SP-203 photoelectric pulse sensor on an ADC pin; beats are detected on the rising edge
-// of the PPG wave and turned into beats per minute once per reading interval.
-class PulseSensor {
+// SP-203 beat detection and heart rate. Named apart from the framework's PulseSensor, which drops
+// rates outside 30-200 bpm before the device sees them and cannot report missing skin contact.
+class HeartRateEstimator {
 public:
+    // Samples the pulse pin; the device calls it every kPulseSampleIntervalMs.
     void addSample(uint32_t nowMs);
     bool hasHeartRate() const;
     // Median beat interval, so one missed or doubled beat does not skew the rate.
@@ -26,4 +27,4 @@ private:
     uint32_t lastBeatMs_ = 0;
 };
 
-#endif  // PULSE_SENSOR_H
+#endif  // HEART_RATE_ESTIMATOR_H
