@@ -2,5 +2,7 @@
 # See https://docs.wokwi.com/guides/libraries
 
 ArduinoJson
+OneWire
+DallasTemperature
 Modest-IoT-Nano-Framework
 MQTT

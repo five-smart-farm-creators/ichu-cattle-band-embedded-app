@@ -32,6 +32,7 @@ struct TelemetryReading {
     bool hasMethaneIndex = false;
     // A failed sensor sends a reason in invalid_reasons instead of a value.
     bool bodyTemperatureOutOfRange = false;
+    bool bodyTemperatureFailed = false;
     HeartRateFailure heartRateFailure = HeartRateFailure::None;
     bool activityIndexFailed = false;
     bool methaneIndexWarmingUp = false;

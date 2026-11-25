@@ -47,7 +47,6 @@ constexpr uint32_t kSchedulerTickMs = 10;
 constexpr uint8_t kTelemetryQueueLength = 10;
 constexpr uint32_t kReadingIntervalMs = 10000;
 // The framework's DS18B20 read blocks the sampler for about 750 ms, so it samples once per interval.
-constexpr uint32_t kTemperatureSampleIntervalMs = 10000;
 constexpr uint32_t kMotionSampleIntervalMs = 50;
 constexpr uint32_t kGpsSampleIntervalMs = 100;
 constexpr uint32_t kGasSampleIntervalMs = 1000;

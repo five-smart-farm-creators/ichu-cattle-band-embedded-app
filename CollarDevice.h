@@ -7,6 +7,7 @@
 #include "CollarClock.h"
 #include "HeartRateEstimator.h"
 #include "SendOutcome.h"
+#include "TemperatureSensor.h"
 
 // Mediator of the collar: the framework sensors report to it, and it queues one reading per interval.
 class CollarDevice : public Device {
@@ -30,7 +31,7 @@ private:
 
     WiFiConnectivityDriver& wifi_;
     HttpGatewayClient& gateway_;
-    OneWireTemperatureSensor temperature_;
+    TemperatureSensor temperature_;
     ImuSensor motion_;
     GeolocationSensor gps_;
     GasSensor gas_;

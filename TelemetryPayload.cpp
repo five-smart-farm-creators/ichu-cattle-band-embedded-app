@@ -42,10 +42,12 @@ size_t TelemetryPayload::serialize(const TelemetryReading& reading, char* out, s
         position["longitude"] = roundTo(reading.longitude, 1e6);
         position["accuracy_meters"] = roundTo(reading.accuracyMeters, 100.0);
     }
-    if (reading.bodyTemperatureOutOfRange || reading.activityIndexFailed || reading.heartRateFailed() ||
+    if (reading.bodyTemperatureFailed || reading.bodyTemperatureOutOfRange || reading.activityIndexFailed || reading.heartRateFailed() ||
         reading.methaneIndexWarmingUp) {
         JsonObject invalidReasons = document["invalid_reasons"].to<JsonObject>();
-        if (reading.bodyTemperatureOutOfRange) {
+        if (reading.bodyTemperatureFailed) {
+            invalidReasons["body_temperature"] = "Temperature sensor not responding";
+        } else if (reading.bodyTemperatureOutOfRange) {
             invalidReasons["body_temperature"] = "Temperature out of physiological range";
         }
         if (reading.activityIndexFailed) {

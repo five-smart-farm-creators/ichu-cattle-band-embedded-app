@@ -15,6 +15,8 @@ void printSummary(const TelemetryReading& reading) {
     Serial.printf("[telemetry] event=%s", reading.eventId);
     if (reading.hasBodyTemperature) {
         Serial.printf(" temp=%.2fC", reading.bodyTemperature);
+    } else if (reading.bodyTemperatureFailed) {
+        Serial.print(" temp=failed");
     } else if (reading.bodyTemperatureOutOfRange) {
         Serial.print(" temp=out-of-range");
     }
@@ -50,22 +52,20 @@ CollarDevice::CollarDevice(WiFiConnectivityDriver& wifi, HttpGatewayClient& gate
     : Device(CollarConfig::kSchedulerTickMs),
       wifi_(wifi),
       gateway_(gateway),
-      temperature_(CollarConfig::kTemperaturePin),
       // Only the motion sensor and the GPS report to this device; the other sensors are read at report time.
       motion_(CollarConfig::kI2cSdaPin, ImuSensor::DEFAULT_I2C_ADDRESS, ImuSensor::IMU_ACCEL_FS_4G,
               ImuSensor::IMU_GYRO_FS_250, this),
       gps_(Serial1, CollarConfig::kGpsRxPin, CollarConfig::kGpsTxPin, CollarConfig::kGpsBaud, this),
       gas_(CollarConfig::kGasPin) {
     clock_.begin();
+    // The framework OneWireTemperatureSensor misreads the DS18B20 in Wokwi, so the DallasTemperature driver stays.
+    temperature_.begin();
     if (!motion_.initialize()) {
         MODEST_LOG_W("Collar", "MPU-6050 did not answer at startup");
     }
     motion_.setFaultThreshold(CollarConfig::kMotionFaultReads);
 
     // Registration must precede initializeAsynchronousEngine(), which rejects later calls.
-    // The temperature is registered first, so each reading follows a fresh temperature sample.
-    appendSensorToScheduler(&temperature_, Sensor::MEASURE_DATA_REQUESTED_EVENT_IDENTIFIER,
-                            CollarConfig::kTemperatureSampleIntervalMs, 0);
     appendSensorToScheduler(this, kReadingEvent, CollarConfig::kReadingIntervalMs, 0);
     appendSensorToScheduler(&motion_, Sensor::MEASURE_DATA_REQUESTED_EVENT_IDENTIFIER,
                             CollarConfig::kMotionSampleIntervalMs, 0);
@@ -105,9 +105,11 @@ void CollarDevice::buildAndQueueReading() {
         clock_.formatUtc(reading.recordedAt, sizeof(reading.recordedAt));
     }
 
-    const float celsius = temperature_.getTemperatureInCelsius();
-    // The edge rejects the whole reading for this value, so only the temperature is dropped.
-    if (celsius < CollarConfig::kMinBodyTemperatureC || celsius > CollarConfig::kMaxBodyTemperatureC) {
+    float celsius = 0.0f;
+    if (!temperature_.read(celsius)) {
+        reading.bodyTemperatureFailed = true;
+    } else if (celsius < CollarConfig::kMinBodyTemperatureC || celsius > CollarConfig::kMaxBodyTemperatureC) {
+        // The edge rejects the whole reading for this value, so only the temperature is dropped.
         reading.bodyTemperatureOutOfRange = true;
     } else {
         reading.hasBodyTemperature = true;

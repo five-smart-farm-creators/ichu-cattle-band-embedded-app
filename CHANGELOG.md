@@ -17,7 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - The collar sends its device key as `Authorization: ApiKey <key>`, which the Edge API accepts next to `X-API-Key`.
 - Readings that cannot be sent wait in LittleFS (60 readings) instead of NVS, and are replayed after the next successful send.
 - The activity index is the RMS deviation from 1 g over each reporting interval, and the methane index is computed from the raw ADC counts instead of millivolts.
-- `Temperature sensor not responding` and `GPS receiver not responding` are no longer sent, because the framework sensors cannot report them.
+- `GPS receiver not responding` is no longer sent, because the framework `GeolocationSensor` cannot report it. The DS18B20 keeps the DallasTemperature driver, which the framework `OneWireTemperatureSensor` cannot replace in Wokwi.
 
 ### Removed
 

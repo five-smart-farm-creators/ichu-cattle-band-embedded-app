@@ -18,7 +18,7 @@ A sensor that does not answer is reported in `invalid_reasons` (see [Invalid Rea
 - `maintainNetworkServices()` tracks the Wi-Fi link and starts NTP through `TimeSynchronizationDriver`.
 - `loop()` only yields to FreeRTOS.
 
-Framework classes in use: `Device`, `OneWireTemperatureSensor`, `ImuSensor`, `GeolocationSensor`, `GasSensor`, `PowerManager`, `TelemetryBuffer`, `TelemetryPackage`, `WiFiConnectivityDriver`, `HttpGatewayClient` and `TimeSynchronizationDriver`.
+Framework classes in use: `Device`, `ImuSensor`, `GeolocationSensor`, `GasSensor`, `PowerManager`, `TelemetryBuffer`, `TelemetryPackage`, `WiFiConnectivityDriver`, `HttpGatewayClient` and `TimeSynchronizationDriver`. The DS18B20 keeps the DallasTemperature driver, because the framework `OneWireTemperatureSensor` misreads it in Wokwi.
 
 ---
 
