@@ -14,7 +14,7 @@
 // Values that differ between the simulation and the hardware prototype live here.
 namespace CollarConfig {
 
-constexpr char kFirmwareVersion[] = "0.1.1";
+constexpr char kFirmwareVersion[] = "0.2.0";
 constexpr char kDeviceSerial[] = "ICHU-DEV-0001";
 
 constexpr char kTelemetryReadingsPath[] = "/api/v1/monitoring/telemetry-readings";
