@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Fixed
+
+- A freshly flashed collar, and every Wokwi run, starts its boot counter at a random value, so its event ids no longer repeat ones the Edge API already stored.
+
 ## [0.2.0] - 2026-11-25
 
 ### Added

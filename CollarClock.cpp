@@ -14,6 +14,8 @@ namespace {
 constexpr time_t kEarliestValidEpoch = 1704067200;
 constexpr char kPreferencesNamespace[] = "ichu";
 constexpr char kBootCounterKey[] = "boot";
+// Event ids print the boot count with six digits.
+constexpr uint32_t kMaxBootCount = 999999;
 
 // Days since 1970-01-01 for a proleptic Gregorian date; mktime would depend on the local TZ.
 int64_t daysFromCivil(int64_t year, int64_t month, int64_t day) {
@@ -43,7 +45,12 @@ bool setClockFromGps(const tm& utc) {
 void CollarClock::begin() {
     Preferences preferences;
     preferences.begin(kPreferencesNamespace, false);
-    bootCount_ = preferences.getUInt(kBootCounterKey, 0) + 1;
+    // A fresh flash (or every Wokwi run) has no counter; a random start keeps it from reusing old ids.
+    bootCount_ = preferences.isKey(kBootCounterKey) ? preferences.getUInt(kBootCounterKey) + 1
+                                                     : esp_random() % kMaxBootCount + 1;
+    if (bootCount_ > kMaxBootCount) {
+        bootCount_ = 1;
+    }
     preferences.putUInt(kBootCounterKey, bootCount_);
     preferences.end();
 }
